@@ -19,6 +19,44 @@ namespace TaskTracker.Test
         }
 
         [Fact]
+        public void GetById_ReturnsCorrectTask()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var all = sut.GetAll();
+            var target = all[3];
+
+            // Act
+            var result = sut.GetById(target.Id);
+
+            // Assert
+            Assert.Equal(target.Id, result.Id);
+        }
+
+        [Fact]
+        public void GetMostUrgent_ReturnsTaskWithHighestUrgency()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = sut.GetAll();
+            var now = DateTime.UtcNow;
+            tasks[0].DueDate = now.AddHours(5);
+            tasks[0].Status = Status.NotStarted;
+            tasks[1].DueDate = now.AddMinutes(30);
+            tasks[1].Status = Status.InProgress;
+            tasks[2].DueDate = now.AddMinutes(5);
+            tasks[2].Status = Status.NotStarted;
+            tasks[3].DueDate = now.AddHours(-1);
+            tasks[3].Status = Status.Completed;
+
+            // Act
+            var result = sut.GetMostUrgent();
+
+            // Assert
+            Assert.Equal(tasks[2].Id, result.Id);
+        }
+
+        [Fact]
         public void FilterTasks_ByStatus_ReturnsOnlyMatchingStatus()
         {
             // Arrange
