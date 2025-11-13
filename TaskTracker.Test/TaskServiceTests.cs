@@ -177,5 +177,293 @@ namespace TaskTracker.Test
             Assert.True(result[0].DueDate <= result[1].DueDate);
             Assert.True(result[1].DueDate <= result[2].DueDate);
         }
+
+        [Fact]
+        public void OrderTasks_ByDueDateDescending_ReversesOrder()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var now = DateTime.UtcNow;
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "B",
+                    Description = "Description B",
+                    DueDate = now.AddDays(1),
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "A",
+                    Description = "Description A",
+                    DueDate = now.AddDays(3),
+                    Status = Status.InProgress
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "C",
+                    Description = "Description C",
+                    DueDate = now.AddDays(2),
+                    Status = Status.Completed
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.DueDate,
+                Descending = true
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Equal(3, result.Length);
+            Assert.True(result[0].DueDate >= result[1].DueDate);
+            Assert.True(result[1].DueDate >= result[2].DueDate);
+        }
+
+        [Fact]
+        public void OrderTasks_ByTitleAscending_SortsAlphabetically()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "Charlie",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "alpha",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "Bravo",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Title,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Collection(
+                result,
+                task => Assert.Equal("alpha", task.Title),
+                task => Assert.Equal("Bravo", task.Title),
+                task => Assert.Equal("Charlie", task.Title));
+        }
+
+        [Fact]
+        public void OrderTasks_ByStatusAscending_UsesEnumOrder()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "A",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "B",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "C",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Status,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Collection(
+                result,
+                task => Assert.Equal(Status.NotStarted, task.Status),
+                task => Assert.Equal(Status.InProgress, task.Status),
+                task => Assert.Equal(Status.Completed, task.Status));
+        }
+
+        [Fact]
+        public void OrderTasks_WithNullField_PlacesNullLast()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "Alpha",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = null!,
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "Bravo",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Title,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Null(result[^1].Title);
+            Assert.Equal("Alpha", result[0].Title);
+            Assert.Equal("Bravo", result[1].Title);
+        }
+
+        [Fact]
+        public void OrderTasks_WithEmptyArray_ReturnsEmptyArray()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = Array.Empty<TaskItem>();
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.DueDate
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void OrderTasks_WithIdenticalKeys_PreservesOriginalOrder()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var dueDate = DateTime.UtcNow;
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "Task1",
+                    Description = "Description",
+                    DueDate = dueDate,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "Task2",
+                    Description = "Description",
+                    DueDate = dueDate,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "Task3",
+                    Description = "Description",
+                    DueDate = dueDate,
+                    Status = Status.InProgress
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.DueDate,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Collection(
+                result,
+                task => Assert.Equal(1, task.Id),
+                task => Assert.Equal(2, task.Id),
+                task => Assert.Equal(3, task.Id));
+        }
+
+        [Fact]
+        public void OrderTasks_WithSingleItem_ReturnsSameItem()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var task = new TaskItem
+            {
+                Id = 1,
+                Title = "Only",
+                Description = "Description",
+                DueDate = DateTime.UtcNow,
+                Status = Status.NotStarted
+            };
+            var tasks = new[] { task };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Title
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Same(task, result[0]);
+        }
     }
 }
