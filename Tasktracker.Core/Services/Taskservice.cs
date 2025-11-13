@@ -12,7 +12,6 @@ namespace TaskTracker.Core.Services
         public TaskService()
         {
             // TODO: Remove this when the database is implemented
-            // You might want to remove this when running unit tests
             _taskItems = GenerateDemoTaskItems();
             _nextId = _taskItems.Length;
         }
@@ -50,7 +49,7 @@ namespace TaskTracker.Core.Services
             return _taskItems[0.._nextId];
         }
 
-        public TaskItem[] GetFilteredTasks(FilterCriteria filterCriteria)
+        public TaskItem[] GetFilteredTasks(FilterCriteria? filterCriteria)
         {
             return _taskItems[1..5];
         }
