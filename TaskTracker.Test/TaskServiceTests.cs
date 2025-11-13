@@ -465,5 +465,188 @@ namespace TaskTracker.Test
             Assert.Single(result);
             Assert.Same(task, result[0]);
         }
+
+        [Fact]
+        public void OrderTasks_ByStatus_UsesCountingSort()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "A",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "B",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "C",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Status,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Collection(
+                result,
+                task => Assert.Equal(Status.NotStarted, task.Status),
+                task => Assert.Equal(Status.InProgress, task.Status),
+                task => Assert.Equal(Status.Completed, task.Status));
+        }
+
+        [Fact]
+        public void OrderTasks_ByStatus_IsStableWithinSameBucket()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "A",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "B",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "C",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                },
+                new TaskItem
+                {
+                    Id = 4,
+                    Title = "D",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Status,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Collection(
+                result,
+                task => Assert.Equal(1, task.Id),
+                task => Assert.Equal(2, task.Id),
+                task => Assert.Equal(3, task.Id),
+                task => Assert.Equal(4, task.Id));
+        }
+
+        [Fact]
+        public void OrderTasks_ByStatusDescending_UsesReverseEnumOrder()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "A",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "B",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "C",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                },
+                new TaskItem
+                {
+                    Id = 4,
+                    Title = "D",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 5,
+                    Title = "E",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 6,
+                    Title = "F",
+                    Description = "Description",
+                    DueDate = DateTime.UtcNow,
+                    Status = Status.InProgress
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Status,
+                Descending = true
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Collection(
+                result,
+                task => Assert.Equal(Status.Completed, task.Status),
+                task => Assert.Equal(Status.Completed, task.Status),
+                task => Assert.Equal(Status.InProgress, task.Status),
+                task => Assert.Equal(Status.InProgress, task.Status),
+                task => Assert.Equal(Status.NotStarted, task.Status),
+                task => Assert.Equal(Status.NotStarted, task.Status));
+        }
     }
 }
