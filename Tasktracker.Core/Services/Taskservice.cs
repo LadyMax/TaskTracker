@@ -170,6 +170,7 @@ namespace TaskTracker.Core.Services
 
             var orderBy = orderCriteria?.OrderBy ?? OrderByField.DueDate;
             var descending = orderCriteria?.Descending ?? false;
+            var referenceTime = DateTime.UtcNow;
 
             if (orderBy == OrderByField.Status)
             {
@@ -181,7 +182,7 @@ namespace TaskTracker.Core.Services
                 var current = sorted[i];
                 var position = i - 1;
 
-                while (position >= 0 && ShouldSwap(sorted[position], current, orderBy, descending))
+                while (position >= 0 && ShouldSwap(sorted[position], current, orderBy, descending, referenceTime))
                 {
                     sorted[position + 1] = sorted[position];
                     position--;
@@ -193,7 +194,7 @@ namespace TaskTracker.Core.Services
             return sorted;
         }
 
-        private static bool ShouldSwap(TaskItem? left, TaskItem? right, OrderByField field, bool descending)
+        private static bool ShouldSwap(TaskItem? left, TaskItem? right, OrderByField field, bool descending, DateTime referenceTime)
         {
             if (right is null)
             {
@@ -205,17 +206,20 @@ namespace TaskTracker.Core.Services
                 return true;
             }
 
-            var comparison = Compare(left, right, field);
+            var comparison = Compare(left, right, field, referenceTime);
             return descending ? comparison < 0 : comparison > 0;
         }
 
-        private static int Compare(TaskItem left, TaskItem right, OrderByField field)
+        private static int Compare(TaskItem left, TaskItem right, OrderByField field, DateTime referenceTime)
         {
+            // Compare two tasks based on the specified field
+            // O(1) time for each comparison
             return field switch
             {
                 OrderByField.DueDate => left.DueDate.CompareTo(right.DueDate),
                 OrderByField.Title => CompareStrings(left.Title, right.Title),
                 OrderByField.Status => ((int)left.Status).CompareTo((int)right.Status),
+                OrderByField.Urgency => CalculateUrgencyScore(left, referenceTime).CompareTo(CalculateUrgencyScore(right, referenceTime)),
                 _ => 0
             };
         }
