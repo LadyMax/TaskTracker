@@ -686,5 +686,62 @@ namespace TaskTracker.Test
                 task => Assert.Equal(Status.NotStarted, task.Status),
                 task => Assert.Equal(Status.NotStarted, task.Status));
         }
+
+        [Fact]
+        public void OrderTasks_ByUrgencyDescending_PrioritisesSoonestAndActiveTasks()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var now = DateTime.UtcNow;
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "FarFuture",
+                    Description = "Description",
+                    DueDate = now.AddDays(3),
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "Soon",
+                    Description = "Description",
+                    DueDate = now.AddHours(2),
+                    Status = Status.InProgress
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "OverdueDone",
+                    Description = "Description",
+                    DueDate = now.AddHours(-1),
+                    Status = Status.Completed
+                },
+                new TaskItem
+                {
+                    Id = 4,
+                    Title = "Immediate",
+                    Description = "Description",
+                    DueDate = now.AddMinutes(10),
+                    Status = Status.NotStarted
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.Urgency,
+                Descending = true
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Equal(4, result[0].Id);
+            Assert.Equal(2, result[1].Id);
+            Assert.Equal(3, result[2].Id);
+            Assert.Equal(1, result[3].Id);
+        }
     }
 }

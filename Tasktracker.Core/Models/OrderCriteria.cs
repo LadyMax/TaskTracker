@@ -18,5 +18,6 @@ public enum OrderByField
 {
     Title,
     DueDate,
-    Status
+    Status,
+    Urgency
 }
