@@ -171,10 +171,31 @@ namespace TaskTracker.Core.Services
             return field switch
             {
                 OrderByField.DueDate => left.DueDate.CompareTo(right.DueDate),
-                OrderByField.Title => string.Compare(left.Title, right.Title, StringComparison.OrdinalIgnoreCase),
+                OrderByField.Title => CompareStrings(left.Title, right.Title),
                 OrderByField.Status => ((int)left.Status).CompareTo((int)right.Status),
                 _ => 0
             };
+        }
+
+        private static int CompareStrings(string? left, string? right)
+        {
+            // Handle null values - nulls go to the end
+            if (left is null && right is null)
+            {
+                return 0;
+            }
+
+            if (left is null)
+            {
+                return 1;
+            }
+
+            if (right is null)
+            {
+                return -1;
+            }
+
+            return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
         }
 
 
