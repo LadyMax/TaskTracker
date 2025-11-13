@@ -21,10 +21,7 @@ namespace TaskTracker.Core.Services
             if(_nextId >= _taskItems.Length)
             {
                 var newTaskItems = new TaskItem[_taskItems.Length * 2];
-                for (int i = 0; i < _taskItems.Length; i++)
-                {
-                    newTaskItems[i] = _taskItems[i];
-                }
+                Array.Copy(_taskItems, newTaskItems, _taskItems.Length);
                 _taskItems = newTaskItems;
             }
             taskItem.Id = _nextId;
@@ -102,11 +99,7 @@ namespace TaskTracker.Core.Services
             if (!hasCriteria)
             {
                 var copy = new TaskItem[totalTasks];
-                for (int i = 0; i < totalTasks; i++)
-                {
-                    copy[i] = _taskItems[i];
-                }
-
+                Array.Copy(_taskItems, copy, totalTasks);
                 return copy;
             }
 
@@ -145,11 +138,7 @@ namespace TaskTracker.Core.Services
             }
 
             var result = new TaskItem[matches];
-            for (int i = 0; i < matches; i++)
-            {
-                result[i] = buffer[i];
-            }
-
+            Array.Copy(buffer, result, matches);
             return result;
         }
 
@@ -163,10 +152,7 @@ namespace TaskTracker.Core.Services
             }
 
             var sorted = new TaskItem[taskItems.Length];
-            for (int copyIndex = 0; copyIndex < taskItems.Length; copyIndex++)
-            {
-                sorted[copyIndex] = taskItems[copyIndex];
-            }
+            Array.Copy(taskItems, sorted, taskItems.Length);
 
             var orderBy = orderCriteria?.OrderBy ?? OrderByField.DueDate;
             var descending = orderCriteria?.Descending ?? false;
@@ -219,9 +205,17 @@ namespace TaskTracker.Core.Services
                 OrderByField.DueDate => left.DueDate.CompareTo(right.DueDate),
                 OrderByField.Title => CompareStrings(left.Title, right.Title),
                 OrderByField.Status => ((int)left.Status).CompareTo((int)right.Status),
-                OrderByField.Urgency => CalculateUrgencyScore(left, referenceTime).CompareTo(CalculateUrgencyScore(right, referenceTime)),
+                OrderByField.Urgency => CompareByUrgency(left, right, referenceTime),
                 _ => 0
             };
+        }
+
+        private static int CompareByUrgency(TaskItem left, TaskItem right, DateTime referenceTime)
+        {
+            // Calculate urgency scores once to avoid duplicate calculations
+            var leftScore = CalculateUrgencyScore(left, referenceTime);
+            var rightScore = CalculateUrgencyScore(right, referenceTime);
+            return leftScore.CompareTo(rightScore);
         }
 
         private static int CompareStrings(string? left, string? right)
