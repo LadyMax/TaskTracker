@@ -129,5 +129,53 @@ namespace TaskTracker.Test
             // Assert
             Assert.Empty(result);
         }
+
+        [Fact]
+        public void OrderTasks_ByDueDateAscending_UsesInsertionSort()
+        {
+            // Arrange
+            var sut = new TaskService();
+            var now = DateTime.UtcNow;
+            var tasks = new[]
+            {
+                new TaskItem
+                {
+                    Id = 1,
+                    Title = "B",
+                    Description = "Description B",
+                    DueDate = now.AddDays(3),
+                    Status = Status.InProgress
+                },
+                new TaskItem
+                {
+                    Id = 2,
+                    Title = "C",
+                    Description = "Description C",
+                    DueDate = now.AddDays(1),
+                    Status = Status.NotStarted
+                },
+                new TaskItem
+                {
+                    Id = 3,
+                    Title = "A",
+                    Description = "Description A",
+                    DueDate = now.AddDays(2),
+                    Status = Status.Completed
+                }
+            };
+            var criteria = new OrderCriteria
+            {
+                OrderBy = OrderByField.DueDate,
+                Descending = false
+            };
+
+            // Act
+            var result = sut.OrderTasks(tasks, criteria);
+
+            // Assert
+            Assert.Equal(3, result.Length);
+            Assert.True(result[0].DueDate <= result[1].DueDate);
+            Assert.True(result[1].DueDate <= result[2].DueDate);
+        }
     }
 }
