@@ -36,12 +36,50 @@ namespace TaskTracker.Core.Services
 
         public TaskItem GetMostUrgent()
         {
-            return _taskItems[1];
+            // Find task with highest urgency score by checking all tasks
+            // O(n) time
+            if (_nextId == 0)
+            {
+                throw new InvalidOperationException("No tasks available to evaluate urgency.");
+            }
+
+            var referenceTime = DateTime.UtcNow;
+            TaskItem? mostUrgent = null;
+            var highestScore = double.NegativeInfinity;
+
+            for (int i = 0; i < _nextId; i++)
+            {
+                var task = _taskItems[i];
+                if (task is null)
+                {
+                    continue;
+                }
+
+                var score = CalculateUrgencyScore(task, referenceTime);
+                if (mostUrgent is null || score > highestScore)
+                {
+                    highestScore = score;
+                    mostUrgent = task;
+                }
+            }
+
+            return mostUrgent ?? throw new InvalidOperationException("No tasks available to evaluate urgency.");
         }
 
         public TaskItem GetById(int id)
         {
-            return _taskItems[0];
+            // Linear search for task with matching id
+            // O(n) time
+            for (int i = 0; i < _nextId; i++)
+            {
+                var task = _taskItems[i];
+                if (task?.Id == id)
+                {
+                    return task;
+                }
+            }
+
+            throw new KeyNotFoundException($"Task with id {id} was not found.");
         }
 
         public TaskItem[] GetAll()
@@ -257,6 +295,22 @@ namespace TaskTracker.Core.Services
             }
 
             return (totalStatuses - 1) - index;
+        }
+
+        private static double CalculateUrgencyScore(TaskItem task, DateTime referenceTime)
+        {
+            // Closer deadline = higher urgency, unfinished tasks get bonus
+            var minutesToDue = (task.DueDate - referenceTime).TotalMinutes;
+            var baseScore = -minutesToDue;
+            var statusAdjustment = task.Status switch
+            {
+                Status.NotStarted => 60.0,
+                Status.InProgress => 30.0,
+                Status.Completed => -240.0,
+                _ => 0.0
+            };
+
+            return baseScore + statusAdjustment;
         }
 
         private TaskItem[] GenerateDemoTaskItems()
