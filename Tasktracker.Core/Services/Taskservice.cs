@@ -133,6 +133,11 @@ namespace TaskTracker.Core.Services
             var orderBy = orderCriteria?.OrderBy ?? OrderByField.DueDate;
             var descending = orderCriteria?.Descending ?? false;
 
+            if (orderBy == OrderByField.Status)
+            {
+                return CountingSortByStatus(sorted, descending);
+            }
+
             for (int i = 1; i < sorted.Length; i++)
             {
                 var current = sorted[i];
@@ -198,6 +203,61 @@ namespace TaskTracker.Core.Services
             return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static TaskItem[] CountingSortByStatus(TaskItem[] source, bool descending)
+        {
+            // Counting sort works well when we have limited distinct values
+            // O(n + k) where k is number of status types (small constant)
+            var statusValues = Enum.GetValues<Status>();
+            var statusCount = statusValues.Length;
+            var counts = new int[statusCount];
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                var task = source[i];
+                if (task is null)
+                {
+                    continue;
+                }
+
+                var bucket = GetStatusOrderingIndex(task.Status, descending, statusCount);
+                counts[bucket]++;
+            }
+
+            for (int i = 1; i < counts.Length; i++)
+            {
+                counts[i] += counts[i - 1];
+            }
+
+            var output = new TaskItem[source.Length];
+            var nullInsertIndex = source.Length - 1;
+            for (int i = source.Length - 1; i >= 0; i--)
+            {
+                var task = source[i];
+                if (task is null)
+                {
+                    output[nullInsertIndex] = null!;
+                    nullInsertIndex--;
+                    continue;
+                }
+
+                var bucket = GetStatusOrderingIndex(task.Status, descending, statusCount);
+                counts[bucket]--;
+                output[counts[bucket]] = task;
+            }
+
+            return output;
+        }
+
+        private static int GetStatusOrderingIndex(Status status, bool descending, int totalStatuses)
+        {
+            var index = (int)status;
+            if (!descending)
+            {
+                return index;
+            }
+
+            return (totalStatuses - 1) - index;
+        }
 
         private TaskItem[] GenerateDemoTaskItems()
         {
