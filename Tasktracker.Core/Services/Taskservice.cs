@@ -51,6 +51,8 @@ namespace TaskTracker.Core.Services
 
         public TaskItem[] GetFilteredTasks(FilterCriteria? filterCriteria)
         {
+            // Just loop through all tasks once and collect matches
+            // O(n) time, O(n) space worst case
             var totalTasks = _nextId;
             if (totalTasks == 0)
             {
@@ -115,7 +117,64 @@ namespace TaskTracker.Core.Services
 
         public TaskItem[] OrderTasks(TaskItem[] taskItems, OrderCriteria orderCriteria)
         {
-            return taskItems[1.._nextId].Reverse().ToArray();
+            // Insertion sort - for each element, find where it should go and shift others
+            // O(n^2) worst case, but works well if data is almost sorted
+            if (taskItems is null || taskItems.Length == 0)
+            {
+                return Array.Empty<TaskItem>();
+            }
+
+            var sorted = new TaskItem[taskItems.Length];
+            for (int copyIndex = 0; copyIndex < taskItems.Length; copyIndex++)
+            {
+                sorted[copyIndex] = taskItems[copyIndex];
+            }
+
+            var orderBy = orderCriteria?.OrderBy ?? OrderByField.DueDate;
+            var descending = orderCriteria?.Descending ?? false;
+
+            for (int i = 1; i < sorted.Length; i++)
+            {
+                var current = sorted[i];
+                var position = i - 1;
+
+                while (position >= 0 && ShouldSwap(sorted[position], current, orderBy, descending))
+                {
+                    sorted[position + 1] = sorted[position];
+                    position--;
+                }
+
+                sorted[position + 1] = current;
+            }
+
+            return sorted;
+        }
+
+        private static bool ShouldSwap(TaskItem? left, TaskItem? right, OrderByField field, bool descending)
+        {
+            if (right is null)
+            {
+                return false;
+            }
+
+            if (left is null)
+            {
+                return true;
+            }
+
+            var comparison = Compare(left, right, field);
+            return descending ? comparison < 0 : comparison > 0;
+        }
+
+        private static int Compare(TaskItem left, TaskItem right, OrderByField field)
+        {
+            return field switch
+            {
+                OrderByField.DueDate => left.DueDate.CompareTo(right.DueDate),
+                OrderByField.Title => string.Compare(left.Title, right.Title, StringComparison.OrdinalIgnoreCase),
+                OrderByField.Status => ((int)left.Status).CompareTo((int)right.Status),
+                _ => 0
+            };
         }
 
 
